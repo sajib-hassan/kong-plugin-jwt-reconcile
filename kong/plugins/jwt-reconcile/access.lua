@@ -50,7 +50,7 @@ local function external_request(conf, version)
 
   if conf.copy_headers then
     local req_headers = kong.request.get_headers()
-    kong.log.inspect(req_headers)
+
     for header_name, header_value in pairs(req_headers) do
       if not header_value then
         goto continue
@@ -59,9 +59,6 @@ local function external_request(conf, version)
       :: continue ::
     end
   end
-
-  kong.log.inspect(conf)
-  kong.log.inspect(headers)
 
   local response, err = httpc:request_uri(conf.url, {
     method = conf.method,
