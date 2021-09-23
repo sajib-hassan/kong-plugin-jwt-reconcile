@@ -56,6 +56,3 @@ $ curl -X POST http://kong:8001/apis/{api}/plugins \
 | `config.streamdown_injected_headers` | false | When this option is enabled, `jwt-reconcile` will add to the response header all headers added by `jwt-reconcile` and by the middle-service. |
 
 
-## Author
-
-Pathao Pay Team
