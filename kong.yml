@@ -1,0 +1,44 @@
+_format_version: "2.1"
+
+services:
+  - name: warden-service
+#    url: http://host.docker.internal:8080
+    connect_timeout: 60000
+    host: host.docker.internal
+    port: 8080
+    protocol: http
+    read_timeout: 60000
+    retries: 5
+    write_timeout: 60000
+    routes:
+      - name: warden-routes
+        methods: [ "POST", "PATCH" ]
+        path_handling: v0
+        preserve_host: false
+        protocols:
+          - http
+          - https
+        regex_priority: 0
+        strip_path: false
+        https_redirect_status_code: 426
+        paths:
+          - /api/v1/auth/login
+          - /api/v1/auth/challenges/validate
+          - /api/v1/auth/challenges/resend
+          - /api/v1/auth/refresh
+          - /api/v1/auth/logout
+  - name: member-service
+    url: http://host.docker.internal:9000
+    routes:
+      - name: member-routes
+        strip_path: false
+        paths:
+          - /api/v1/member/me
+          - /api/v1/member/profile-picture
+          - /api/v1/member/account-status
+
+plugins:
+  - name: jwt-reconcile
+    service: member-service
+    config:
+      url: http://host.docker.internal:8080

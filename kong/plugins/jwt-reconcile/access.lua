@@ -50,6 +50,7 @@ local function external_request(conf, version)
 
   if conf.copy_headers then
     local req_headers = kong.request.get_headers()
+    kong.log.inspect(req_headers)
     for header_name, header_value in pairs(req_headers) do
       if not header_value then
         goto continue
@@ -58,6 +59,9 @@ local function external_request(conf, version)
       :: continue ::
     end
   end
+
+  kong.log.inspect(conf)
+  kong.log.inspect(headers)
 
   local response, err = httpc:request_uri(conf.url, {
     method = conf.method,
@@ -78,8 +82,6 @@ local function external_request(conf, version)
   return { status = response.status, body = response.body }, nil
 end
 
-
-
 local function inject_body_response_into_header(conf, response)
   if not conf.inject_body_response_into_header then
     return nil
@@ -91,7 +93,11 @@ local function inject_body_response_into_header(conf, response)
       goto continue
     end
 
-    local header_name = dasherize(conf.injected_header_prefix .. key)
+    if conf.injected_header_prefix then
+      key = conf.injected_header_prefix .. key
+    end
+
+    local header_name = dasherize(key)
     local header_value = value
 
     if type(header_value) == "table" then
@@ -109,8 +115,6 @@ local function inject_body_response_into_header(conf, response)
   end
 end
 
-
-
 function _M.execute(conf, version)
   local response, err;
 
@@ -121,9 +125,16 @@ function _M.execute(conf, version)
   -- unexpected error
   if err then
     kong.log.debug(err)
-    return kong.response.exit(500, {message=err})
+    return kong.response.exit(500, { message = err })
   end
 
+  if response.status == 403 then
+    return kong.response.exit(403, { message = conf.message_403 })
+  elseif response.status == 404 then
+    return kong.response.exit(404, { message = conf.message_404 })
+  elseif response.status ~= 200 then
+    return kong.response.exit(401, { message = conf.message_401 })
+  end
   -- inject the body response into the header
   inject_body_response_into_header(conf, response)
 
